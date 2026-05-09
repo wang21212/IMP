@@ -34,7 +34,7 @@ N→N.1 迭代，骨架不动，新增或修改一个功能单元。
 
 ### Step 5: 更新 milestone-state.md，写入 session-state
 
-更新 `.windsurf/memory/milestone-state.md`：将当前里程碑标记为「已完成」，记录实际完成内容。若本次完成改变了后续里程碑的前提假设，将受影响的里程碑标注 `[需重评]`。
+更新 `.windsurf/memory/milestone-state.md`：将当前里程碑标记为「已完成」，**记录实际完成内容而非复制原计划**。若实际结果与原计划有偏差（计划做 A，实际做了 A' 或 A+B），必须明确写出偏差点和原因——后续里程碑的轻量意图校准依赖这些信息做判断。若本次完成改变了后续里程碑的前提假设，将受影响的里程碑标注 `[需重评]`。
 
 更新 `.windsurf/memory/session-state.md`。
 
