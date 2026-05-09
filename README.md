@@ -106,7 +106,7 @@ Layer 3: Project Memory（状态存储）
 |------|----------|----------|
 | `direction.md` | 项目骨架现状、技术栈、核心约束 | onboard 初始化 / 每次骨架变更后 |
 | `intent-log.md` | 意图锚点日志，记录每次锁定的意图 | 每次 imp-intent 完成后追加 |
-| `milestone-state.md` | 里程碑列表与当前进展 | 每个功能单元完成时更新 |
+| `milestone-state.md` | 里程碑追加快照（最新版本在顶部，含 diff 标注） | 里程碑状态变更时追加新版本 |
 | `session-state.md` | 对话断点——任务/进展/下一步 | 每次对话结束前写入 |
 
 ### 四级问题分类
