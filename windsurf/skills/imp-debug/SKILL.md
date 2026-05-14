@@ -36,6 +36,8 @@ description: IMP 任务级执行流程 — 明确指令的直接执行（修 bug
 
 实施最小改动，执行 imp-verify，输出验证结果。
 
+**执行中遇到需自主判断的选择时**，同 imp-feature Step 4 的汇报规则：改变实现路径、涉及资源/成本、超出已知上下文的判断 → 先汇报再继续；纯技术细节 → 执行后提及即可。
+
 ### Step 5: 写入 session-state
 
 更新 `.windsurf/memory/session-state.md`。
