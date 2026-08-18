@@ -1,7 +1,9 @@
 # IMP 全局入口规则 (Windsurf Global Rules)
 
+> 状态根统一为 `<项目根>/.imp/memory/`（跨工具共享：Windsurf / DHS / 其他平台读写同一份）。旧版 `.windsurf/memory/` 状态请用 `dsh/migrate-memory.ps1` 迁移。
+
 ## Step 0: 断点恢复（每次对话必执行）
-检查 `.windsurf/memory/session-state.md`：
+检查 `.imp/memory/session-state.md`：
 - 存在 → 读取，回复开头输出：
   "[IMP] 上次断点: {任务} | 层级: {级别} | 进展: {描述} | 下一步: {描述}"
   然后问：「继续上次 / 开始新任务？」
@@ -17,7 +19,7 @@
 | 任务级  | 执行明确指令（修 bug、跑验收、小调整等），不新增能力，不改接口  | 可跳过      | imp-debug       |
 | 功能级  | 新增/修改功能；可能改 API 但不改核心模型/架构      | 必须执行    | imp-intent → imp-feature |
 | 骨架级  | 改数据模型/部署拓扑/核心模块边界/配置结构         | 必须执行    | imp-intent → imp-architect |
-| 新项目  | 无 .windsurf/memory/ 或用户说「接手/新项目」      | 包含在 onboard 内 | imp-onboard |
+| 新项目  | 无 .imp/memory/ 或用户说「接手/新项目」      | 包含在 onboard 内 | imp-onboard |
 
 级别判定是**递归的**：一个骨架级任务拆解后，每个子任务重新判级；功能级任务执行中若发现需改骨架，升级路由。大事套中事套小事，同一套判定逻辑在每个粒度上复用，无需新增 Skill。
 
@@ -26,4 +28,4 @@
 ## Step 2: 强制约束（任何级别均适用）
 1. 骨架级禁令：判定为骨架级后，禁止直接执行任何代码变更，必须先完成 imp-intent + 影响分析 + 人确认
 2. 验证禁令：任何修改完成后，禁止只说「已完成」，必须执行 imp-verify 并输出验证结果
-3. 状态同步：每次对话结束前，自动更新 `.windsurf/memory/session-state.md`
+3. 状态同步：每次对话结束前，自动更新 `.imp/memory/session-state.md`

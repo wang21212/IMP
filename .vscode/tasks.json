@@ -38,6 +38,44 @@
       "problemMatcher": []
     },
     {
+      "label": "IMP: Deploy to DSH",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\dsh\\deploy-dsh.ps1"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "IMP: Migrate Memory (.windsurf → .imp)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\dsh\\migrate-memory.ps1",
+        "-Project",
+        "${workspaceFolder}"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "IMP: Deploy All (Skills + Global Rules)",
       "dependsOn": [
         "IMP: Deploy Skills to Local Windsurf",

@@ -39,9 +39,9 @@ description: IMP 骨架级变更流程 — 影响分析→强制人工书面确�
 
 ### Step 4: 更新 direction.md + milestone-state.md
 
-更新 `.windsurf/memory/direction.md` 骨架现状。
+更新 `.imp/memory/direction.md` 骨架现状。
 
-若本次骨架变更产出了里程碑规划（如 M0-Mn），在 `.windsurf/memory/milestone-state.md` **文件顶部追加一个完整版本快照**。里程碑规划是粗线条路标，不是详细 spec——后续每个里程碑开始时会重新跑意图循环。
+若本次骨架变更产出了里程碑规划（如 M0-Mn），在 `.imp/memory/milestone-state.md` **文件顶部追加一个完整版本快照**。里程碑规划是粗线条路标，不是详细 spec——后续每个里程碑开始时会重新跑意图循环。
 
 milestone-state.md 采用**追加快照模式**（最新版本在文件最上方）：
 
@@ -62,6 +62,6 @@ milestone-state.md 采用**追加快照模式**（最新版本在文件最上方
 
 ### Step 5: 写入 session-state
 
-更新 `.windsurf/memory/session-state.md`。
+更新 `.imp/memory/session-state.md`。
 
 session-state 只写下次对话必须知道的最少信息，详略由 AI 自决：骨架变更影响面大，可适当多写，但不超过5行。格式：变更内容 / 执行进度（哪层完成/未完成）/ 下一步。

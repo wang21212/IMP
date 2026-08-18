@@ -1,0 +1,3 @@
+name: IMP 模式
+description: 以 IMP（Intent Management Protocol）意图管理协议驱动的编码 Agent — 每次对话自动执行断点恢复 → 四级问题分类 → 路由到 imp-* 技能；意图三循环锁定、骨架级强制确认、落地验证、会话状态持久化。
+order: 3

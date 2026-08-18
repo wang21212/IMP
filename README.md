@@ -86,7 +86,7 @@ Layer 2: Global Skills（编排逻辑）
 
 Layer 3: Project Memory（状态存储）
   4 个 Markdown 文件，持久化项目状态，跨对话保持上下文
-  → 存放位置：[项目根]/.windsurf/memory/
+  → 存放位置：[项目根]/.imp/memory/（跨工具统一状态根，Windsurf / DHS / 其他平台共享）
 ```
 
 ### 6 个 Skill
@@ -148,7 +148,9 @@ Layer 3: Project Memory（状态存储）
 
 在目标项目中**新开一个对话**，说「接手项目」，触发 `imp-onboard`。
 
-AI 会自动扫描项目结构，产出接手备忘录，并在项目根目录创建 `.windsurf/memory/` 及4个 Memory 文件。
+AI 会自动扫描项目结构，产出接手备忘录，并在项目根目录创建 `.imp/memory/` 及4个 Memory 文件。
+
+> 旧版状态根 `.windsurf/memory/` 已统一迁移到 `.imp/memory/`：已有项目的旧状态用 `dsh/migrate-memory.ps1 -Project <路径>` 一键迁移，之后各工具读写同一份 memory，换工具不丢上下文。
 
 ---
 

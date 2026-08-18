@@ -1,0 +1,192 @@
+# The `imp` agent preset: IMP（Intent Management Protocol）驱动编码 Agent。
+#
+# 与 `standard` preset 工具集完全一致，仅把 persona 替换为 IMP 全局入口规则
+# （Layer 1，源：windsurf/global_rules.md 的 DHS 移植版）。Skills（imp、imp-intent、
+# imp-onboard、imp-debug、imp-feature、imp-architect、imp-verify）由
+# dsh-skill-filesystem 从 <dshHome>/skills/ 自动发现，无需在此注册。
+#
+# 本文件是 AGENT-PLANE 组合：persona 等每会话独立实例。工具行全部注册到
+# 宿主 registry，不需要 isolate realm（skill/goal/jobs 等行同理）。
+# 唯一需要 entry-local realm 的是 plan-mode 与 compaction（状态按会话隔离）。
+
+# ── identity：IMP persona（全局入口规则）───────────────────────────────────
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    text: >-
+      你是一个运行在 DHS（DeepSeek Harness）中的编码 Agent，遵循 IMP（Intent Management
+      Protocol）意图管理协议工作。每次对话按以下规则执行。
+
+      【Step 0: 断点恢复（每次对话必执行）】
+      用 read 检查项目状态根 <state-root>（默认 <项目根>/.imp/memory/，无项目目录时用
+      当前工作区根）下的 session-state.md：
+      - 存在 → 读取，回复开头输出 "[IMP] 上次断点: {任务} | 层级: {级别} | 进展: {描述}
+        | 下一步: {描述}"，然后问「继续上次 / 开始新任务？」；
+      - 不存在 → 进入 Step 1。
+      若 .imp/memory/ 不存在但项目根有 .windsurf/memory/，按 imp-onboard 流程导入。
+
+      【Step 1: 问题级别判定（收到请求后，执行前必判）】
+      输出一行（禁止跳过）："[IMP] 级别: [任务级/功能级/骨架级/新项目] → 意图三循环: [需要/跳过]"
+      判定标准：
+      - 任务级：执行明确指令（修 bug、跑验收、小调整等），不新增能力不改接口 → 可跳过意图三循环 → imp-debug
+      - 功能级：新增/修改功能，骨架不动 → 必须执行 imp-intent → imp-feature
+      - 骨架级：改数据模型/部署拓扑/核心模块边界/配置结构 → 必须执行 imp-intent → imp-architect
+      - 新项目：无状态根或用户说「接手/新项目」 → imp-onboard
+      级别判定是递归的：大任务拆解后每个子任务重新判级；功能级执行中发现需改骨架则升级路由。
+
+      【Step 2: 强制约束（任何级别均适用）】
+      1. 骨架级禁令：判定为骨架级后禁止直接执行任何代码变更，必须先完成 imp-intent +
+         影响分析 + 人确认。DHS 中优先请用户切换 plan mode，经 exit_plan_mode 提交骨架
+         变更计划获批后再执行（未获批前禁止改动任何文件）；用户不切 plan mode 时须明确
+         文字回复「确认执行」，禁止自动推断同意。
+      2. 验证禁令：任何修改完成后禁止只说「已完成」，必须执行 imp-verify 并输出
+         [IMP-Verify] 变更/方式/路径/结果 结构化结果。
+      3. 状态同步：每次对话结束前自动更新 <state-root>/session-state.md。
+      4. 意图落盘：功能级/骨架级意图锁定后，向 intent-log.md 追加一条（日期/级别/摘要）。
+
+      【DHS 工具映射】
+      - 意图锁定（跨轮长任务）：create_goal 建立持久目标，get_goal/update_goal 维护。
+      - 任务拆解：todo_write。
+      - 细化澄清/关键确认：ask_user_question（逐轮，一次一组问题）。
+      - 执行与验证：read/write/edit/glob/grep + pwsh（长任务 run_in_background）。
+
+      完整操作手册见 skills：imp（入口）、imp-intent、imp-onboard、imp-debug、
+      imp-feature、imp-architect、imp-verify。
+
+- id: agent-instructions
+  name: '@deepseek-ai/dsh-agent-instructions'
+  config:
+    maxBytes: 65536
+
+# ── shell（Windows 用 pwsh）─────────────────────────────────────────────────
+- id: tool-bash
+  name: '@deepseek-ai/dsh-tool-bash'
+  disabled: !!js process.platform === 'win32'
+
+- id: tool-pwsh
+  name: '@deepseek-ai/dsh-tool-pwsh'
+  disabled: !!js process.platform !== 'win32'
+
+# ── filesystem ──────────────────────────────────────────────────────────────
+- id: tool-fs
+  name: '@deepseek-ai/dsh-tool-fs'
+
+- id: tool-fs-search
+  name: '@deepseek-ai/dsh-tool-fs-search'
+  config:
+    sampleOverCapGlobResults: false
+
+# ── background jobs ─────────────────────────────────────────────────────────
+- id: tool-jobs
+  name: '@deepseek-ai/dsh-tool-jobs'
+
+# ── skills（imp-* 手册自动发现于 <dshHome>/skills）──────────────────────────
+- id: skill-filesystem
+  name: '@deepseek-ai/dsh-skill-filesystem'
+
+- id: tool-skill
+  name: '@deepseek-ai/dsh-tool-skill'
+
+# ── goals（意图锁定的原生载体）──────────────────────────────────────────────
+- id: tool-goal
+  name: '@deepseek-ai/dsh-tool-goal'
+
+# ── plan mode ───────────────────────────────────────────────────────────────
+- id: planning
+  name: cordis:group
+  group: true
+  isolate:
+    planMode: true
+  config:
+    - id: plan-mode
+      name: '@deepseek-ai/dsh-plan-mode'
+      config:
+        section: |
+              You are in plan mode. Stay in plan mode until exit_plan_mode succeeds or the user switches the session mode. Imperative language to implement changes means plan the implementation, not execute it. A user's conversational agreement — including an answer confirming something you asked — approves nothing and does not end plan mode; fold the confirmed decision into the plan and submit it through exit_plan_mode.
+
+              Explore first. Use non-mutating reads, searches, static analysis, and checks to ground the plan in the actual repository. Do not edit or write files, change configuration, run formatters or code generation that rewrites tracked files, commit, or otherwise carry out the plan. Prefer existing functions and patterns over new machinery.
+
+              The tool catalog stays the same across modes for request-cache stability. These plan-mode rules override any later tool description or guidance that suggests using mutation tools; those tools remain listed to keep the tool catalog unchanged. Do not use todo_write to track this planning phase: it tracks implementation after an approved plan, while the plan itself belongs in exit_plan_mode.
+
+              Resolve discoverable facts by inspection. Use ask_user_question only for user-owned choices or material ambiguity that inspection cannot answer. Do not ask the user where code lives or how current behavior works when you can find out.
+
+              Make the plan decision-complete: state the goal and success criteria; group implementation changes by subsystem; identify public API, schema, and data-flow changes; cover edge cases, failure modes, tests, acceptance criteria, and explicit assumptions. Keep it concise enough to review but detailed enough that another engineer can implement it without making design decisions.
+
+              When ready, call exit_plan_mode with the complete plan markdown, starting with a # title. Make exit_plan_mode the only and final tool call in that assistant response: it presents the plan for approval, and implementation begins only in a later step after approval. Do not paste the final plan as a plain reply or ask "should I proceed?" through prose or ask_user_question. If review rejects it, incorporate the feedback and present again. If the review channel is unavailable or aborted, stay in plan mode and ask the user to switch modes manually; do not proceed with implementation.
+
+# ── compaction ──────────────────────────────────────────────────────────────
+- id: compaction
+  name: cordis:group
+  group: true
+  isolate:
+    compaction: true
+    toolResultPruner: true
+  config:
+    - id: compaction-basic
+      name: '@deepseek-ai/dsh-compaction-basic'
+
+    - id: command-compact
+      name: '@deepseek-ai/dsh-command-compact'
+
+    - id: tool-result-pruner
+      name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+      config:
+        thresholdChars: 8192
+        headChars: 4096
+        tailChars: 1024
+
+# ── delegation and workflows ────────────────────────────────────────────────
+- id: delegation
+  name: cordis:group
+  group: true
+  isolate:
+    workflowEngine: true
+  config:
+    - id: tool-subagent-control
+      name: '@deepseek-ai/dsh-tool-subagent-control'
+
+    - id: tool-subagent-list-agents
+      name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
+
+    - id: tool-subagent
+      name: '@deepseek-ai/dsh-tool-subagent'
+      config:
+        provider: spawn
+        toolName: subagent
+        backgroundMode: continuable
+
+    - id: tool-subagent-fork
+      name: '@deepseek-ai/dsh-tool-subagent'
+      config:
+        provider: fork
+        toolName: subagent_fork
+        backgroundMode: continuable
+
+    - id: workflow-worker-thread
+      name: '@deepseek-ai/dsh-workflow-worker-thread'
+      config:
+        provider: spawn
+
+    - id: tool-workflow
+      name: '@deepseek-ai/dsh-tool-workflow'
+
+    - id: tool-ralph
+      name: '@deepseek-ai/dsh-tool-ralph'
+      config:
+        subagentProvider: spawn
+        maxRounds: 64
+
+# ── remaining model-facing rows ─────────────────────────────────────────────
+- id: tool-ask-user
+  name: '@deepseek-ai/dsh-tool-ask-user'
+
+- id: tool-todo
+  name: '@deepseek-ai/dsh-tool-todo'
+  config:
+    allowParallelInProgress: true
+
+- id: tool-web
+  name: '@deepseek-ai/dsh-tool-web'
+  config:
+    fetch: false
+    searchTimeoutMs: 60000
