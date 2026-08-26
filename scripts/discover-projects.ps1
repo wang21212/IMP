@@ -1,23 +1,5 @@
-<#
-.SYNOPSIS
-  IMP 项目发现脚本 — 扫描本机常见工作目录，找出所有含 .imp/memory/ 的项目，
-  自动补登记到 IMP 仓库的 .imp/projects-registry.md。
-
-.DESCRIPTION
-  imp-reflect 评估时若注册表缺失或需要补充新项目，调用此脚本。
-  扫描范围：CascadeProjects、codeM、PodBase、AskEverython 等本机常见工作目录。
-  可通过 -SearchRoots 自定义扫描根目录列表。
-
-.PARAMETER ImpHome
-  IMP 源仓库路径。默认 $env:IMP_HOME 或 C:\Users\WangShuXuan\CascadeProjects\IMP
-
-.PARAMETER SearchRoots
-  要扫描的父目录列表（逗号分隔）。默认本机常见工作目录。
-
-.EXAMPLE
-  .\scripts\discover-projects.ps1
-  .\scripts\discover-projects.ps1 -SearchRoots "C:\Users\WangShuXuan\CascadeProjects,C:\Users\WangShuXuan\codeM"
-#>
+# IMP project discovery script - scan local machine for projects using IMP
+# Cross-platform: works on Windows (powershell/pwsh) and macOS/Linux (pwsh)
 param(
   [string]$ImpHome,
   [string]$SearchRoots
@@ -25,41 +7,42 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# 定位 IMP 源仓库
-if (-not $ImpHome) {
-  $ImpHome = $env:IMP_HOME
-}
-if (-not $ImpHome) {
-  $ImpHome = "C:\Users\WangShuXuan\CascadeProjects\IMP"
+# Locate IMP repo
+if (-not $ImpHome) { $ImpHome = $env:IMP_HOME }
+if (-not $ImpHome) { $ImpHome = "$env:USERPROFILE/CascadeProjects/IMP" }
+if (-not (Test-Path $ImpHome)) {
+  # Try common mac path
+  $macPath = "$env:HOME/CascadeProjects/IMP"
+  if (Test-Path $macPath) { $ImpHome = $macPath }
 }
 if (-not (Test-Path $ImpHome)) {
-  Write-Error "IMP 源仓库不存在: $ImpHome。请设置 -ImpHome 或环境变量 IMP_HOME"
+  Write-Error "IMP repo not found. Set -ImpHome or env var IMP_HOME"
   exit 1
 }
 
-$registryPath = Join-Path $ImpHome ".imp\projects-registry.md"
+$registryPath = "$ImpHome/.imp/projects-registry.md"
 $registryDir = Split-Path -Parent $registryPath
 if (-not (Test-Path $registryDir)) {
   New-Item -ItemType Directory -Force -Path $registryDir | Out-Null
 }
 
-# 扫描根目录
+# Determine search roots: user home + common project directories
 if (-not $SearchRoots) {
-  $userHome = $env:USERPROFILE
+  $home2 = if ($env:USERPROFILE) { $env:USERPROFILE } else { $env:HOME }
+  # Scan user home directly + known project parent dirs
   $SearchRoots = @(
-    "$userHome\CascadeProjects"
-    "$userHome\codeM"
-    "$userHome\PodBase"
-    "$userHome\AskEverython"
-    "$userHome\codeM\sub"
+    $home2
+    "$home2/CascadeProjects"
+    "$home2/codeM"
+    "$home2/SynologyDrive"
   ) -join ","
 }
 $searchRootList = $SearchRoots -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -and (Test-Path $_) }
 
-Write-Host "扫描根目录:" -ForegroundColor Cyan
+Write-Host "Scanning roots:" -ForegroundColor Cyan
 foreach ($r in $searchRootList) { Write-Host "  $r" }
 
-# 读取现有注册表（若存在），避免重复登记
+# Read existing registry to avoid duplicates
 $existingPaths = @{}
 if (Test-Path $registryPath) {
   $existingContent = Get-Content $registryPath -Raw -Encoding UTF8
@@ -67,58 +50,65 @@ if (Test-Path $registryPath) {
   foreach ($line in $lines) {
     if ($line -match '^\|\s*(.+?)\s*\|\s*(.+?)\s*\|') {
       $p = $matches[2].Trim()
-      if ($p -ne '路径' -and $p -ne '------' -and $p -notmatch '^---') {
+      if ($p -ne 'Path' -and $p -ne '------' -and $p -notmatch '^-+' -and $p -notmatch '路径') {
         $existingPaths[$p] = $true
       }
     }
   }
 }
 
-# 扫描各根目录下含 .imp/memory/ 的项目
+# Scan for projects with .imp/memory/ OR .windsurf/memory/ (legacy)
 $discovered = @()
+$seenPaths = @{}
+
 foreach ($root in $searchRootList) {
-  # 扫描两层深度
-  $candidates = Get-ChildItem $root -Directory -ErrorAction SilentlyContinue
-  foreach ($c in $candidates) {
-    $impMemPath = Join-Path $c.FullName ".imp\memory"
-    if (Test-Path $impMemPath) {
-      if (-not $existingPaths.ContainsKey($c.FullName)) {
-        $discovered += [PSCustomObject]@{
-          Name = $c.Name
-          Path = $c.FullName
-          Date = Get-Date -Format "yyyy-MM-dd"
-        }
-        Write-Host "  发现: $($c.Name) -> $($c.FullName)" -ForegroundColor Green
+  # Scan root itself + 2 levels deep
+  $allDirs = @(Get-ChildItem $root -Directory -ErrorAction SilentlyContinue)
+  foreach ($d in $allDirs) {
+    # Check this directory
+    $impMem = "$($d.FullName)/.imp/memory"
+    $legacyMem = "$($d.FullName)/.windsurf/memory"
+    $hasImp = (Test-Path $impMem) -or (Test-Path $legacyMem)
+    if ($hasImp -and -not $existingPaths.ContainsKey($d.FullName) -and -not $seenPaths.ContainsKey($d.FullName)) {
+      $seenPaths[$d.FullName] = $true
+      $discovered += [PSCustomObject]@{
+        Name = $d.Name
+        Path = $d.FullName
+        Date = Get-Date -Format "yyyy-MM-dd"
+        Legacy = (Test-Path $legacyMem) -and -not (Test-Path $impMem)
       }
+      $tag = if (Test-Path $legacyMem) { " (legacy .windsurf/)" } else { "" }
+      Write-Host "  Found: $($d.Name) -> $($d.FullName)$tag" -ForegroundColor Green
     }
-    # 第二层
-    $subCandidates = Get-ChildItem $c.FullName -Directory -ErrorAction SilentlyContinue
-    foreach ($sc in $subCandidates) {
-      $subImpMem = Join-Path $sc.FullName ".imp\memory"
-      if (Test-Path $subImpMem) {
-        if (-not $existingPaths.ContainsKey($sc.FullName)) {
-          $discovered += [PSCustomObject]@{
-            Name = $sc.Name
-            Path = $sc.FullName
-            Date = Get-Date -Format "yyyy-MM-dd"
-          }
-          Write-Host "  发现: $($sc.Name) -> $($sc.FullName)" -ForegroundColor Green
+    # Check one level deeper
+    $subDirs = Get-ChildItem $d.FullName -Directory -ErrorAction SilentlyContinue
+    foreach ($sd in $subDirs) {
+      $subImpMem = "$($sd.FullName)/.imp/memory"
+      $subLegacyMem = "$($sd.FullName)/.windsurf/memory"
+      $subHasImp = (Test-Path $subImpMem) -or (Test-Path $subLegacyMem)
+      if ($subHasImp -and -not $existingPaths.ContainsKey($sd.FullName) -and -not $seenPaths.ContainsKey($sd.FullName)) {
+        $seenPaths[$sd.FullName] = $true
+        $discovered += [PSCustomObject]@{
+          Name = $sd.Name
+          Path = $sd.FullName
+          Date = Get-Date -Format "yyyy-MM-dd"
+          Legacy = (Test-Path $subLegacyMem) -and -not (Test-Path $subImpMem)
         }
+        $tag = if (Test-Path $subLegacyMem) { " (legacy .windsurf/)" } else { "" }
+        Write-Host "  Found: $($sd.Name) -> $($sd.FullName)$tag" -ForegroundColor Green
       }
     }
   }
 }
 
 if ($discovered.Count -eq 0) {
-  Write-Host "未发现新项目（所有含 .imp/memory/ 的项目已在注册表中，或本机无此类项目）" -ForegroundColor Yellow
+  Write-Host "No new projects found (all projects with .imp/memory/ already registered, or none exist)" -ForegroundColor Yellow
   exit 0
 }
 
-# 追加到注册表
+# Append to registry
 if (-not (Test-Path $registryPath)) {
   $header = @"
-
-
 # 本机使用 IMP 的项目注册表
 
 > imp-onboard 执行时往这里追加一行；imp-reflect 按此表扫描各项目 trace。
@@ -137,6 +127,10 @@ foreach ($d in $discovered) {
 Add-Content -Path $registryPath -Value ($appendLines -join "`n") -Encoding UTF8
 
 Write-Host ""
-Write-Host "=== 发现完成 ===" -ForegroundColor Cyan
-Write-Host "新登记项目数: $($discovered.Count)"
-Write-Host "注册表路径: $registryPath"
+Write-Host "=== Discovery complete ===" -ForegroundColor Cyan
+Write-Host "New projects registered: $($discovered.Count)"
+$legacyCount = ($discovered | Where-Object { $_.Legacy }).Count
+if ($legacyCount -gt 0) {
+  Write-Host "  (of which $legacyCount use legacy .windsurf/memory/ — run dsh/migrate-memory.ps1 to migrate)"
+}
+Write-Host "Registry: $registryPath"

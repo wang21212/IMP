@@ -1,27 +1,26 @@
 #!/bin/sh
-# IMP pre-commit hook — 自动跑 build.ps1 重建 windsurf/ 和 dsh/
-# 改 core/ 后直接 git commit，hook 自动同步生成产物，无感
+# IMP pre-commit hook — auto-rebuild windsurf/ and dsh/ from core/
+# Cross-platform: works on Windows (Git Bash) and macOS/Linux
 
-echo "[IMP] pre-commit: 自动重建平台 skill..."
+echo "[IMP] pre-commit: auto-rebuilding platform skills..."
 
-# 定位 build.ps1（hook 的 cwd 是仓库根）
 SCRIPT="scripts/build.ps1"
 if [ ! -f "$SCRIPT" ]; then
-  echo "[IMP] pre-commit: build.ps1 不存在，跳过"
+  echo "[IMP] pre-commit: build.ps1 not found, skipping"
   exit 0
 fi
 
-# 用 powershell 跑 build.ps1
-if command -v powershell.exe >/dev/null 2>&1; then
-  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$SCRIPT"
-elif command -v pwsh >/dev/null 2>&1; then
+# Try pwsh first (macOS/Linux + Windows PowerShell Core), then powershell.exe (Windows)
+if command -v pwsh >/dev/null 2>&1; then
   pwsh -NoProfile -ExecutionPolicy Bypass -File "$SCRIPT"
+elif command -v powershell.exe >/dev/null 2>&1; then
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$SCRIPT"
 else
-  echo "[IMP] pre-commit: 找不到 PowerShell，跳过重建"
+  echo "[IMP] pre-commit: PowerShell not found, skipping rebuild"
   exit 0
 fi
 
-# 把生成产物加入暂存区
+# Stage generated outputs
 git add windsurf/ dsh/
 
-echo "[IMP] pre-commit: 重建完成，已暂存 windsurf/ 和 dsh/"
+echo "[IMP] pre-commit: rebuild complete, staged windsurf/ and dsh/"

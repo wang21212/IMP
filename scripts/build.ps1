@@ -1,19 +1,21 @@
 # IMP build script - inject core/ into platform adaptor shells
+# Cross-platform: works on Windows (powershell/pwsh) and macOS/Linux (pwsh)
 param([string]$Platform)
 
 $ErrorActionPreference = "Stop"
 
-# Resolve repo root
+# Use forward slash for cross-platform path compatibility
+# PowerShell on both Windows and macOS/Linux accepts /
 if ($PSScriptRoot) {
-  $repoRoot = Split-Path -Parent $PSScriptRoot
+  $repoRoot = (Split-Path -Parent $PSScriptRoot) -replace '\\','/'
 } elseif ($MyInvocation.MyCommand.Path) {
-  $repoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
+  $repoRoot = (Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)) -replace '\\','/'
 } else {
-  $repoRoot = (Get-Location).Path
+  $repoRoot = (Get-Location).Path -replace '\\','/'
 }
 
-$coreDir = "$repoRoot\core"
-$adaptorsDir = "$repoRoot\adaptors"
+$coreDir = "$repoRoot/core"
+$adaptorsDir = "$repoRoot/adaptors"
 
 if (-not (Test-Path $coreDir)) {
   Write-Error "core/ not found: $coreDir"
@@ -42,7 +44,7 @@ function Invoke-Injection {
   for ($i = $matches.Count - 1; $i -ge 0; $i--) {
     $m = $matches[$i]
     $coreName = $m.Groups[1].Value
-    $coreFile = "$CoreDirPath\$coreName.md"
+    $coreFile = "$CoreDirPath/$coreName.md"
     if (Test-Path $coreFile) {
       $coreContent = (Get-Content $coreFile -Raw -Encoding UTF8).TrimEnd()
       $result = $result.Substring(0, $m.Index) + $coreContent + $result.Substring($m.Index + $m.Length)
@@ -58,7 +60,7 @@ $totalFiles = 0
 $totalInjections = 0
 
 foreach ($plat in $platforms) {
-  $platDir = "$adaptorsDir\$plat"
+  $platDir = "$adaptorsDir/$plat"
   if (-not (Test-Path $platDir)) {
     Write-Warning "Platform dir not found, skipping: $platDir"
     continue
@@ -67,15 +69,15 @@ foreach ($plat in $platforms) {
   Write-Host ""
   Write-Host "=== Building: $plat ===" -ForegroundColor Cyan
 
-  $outputDir = "$repoRoot\$plat"
+  $outputDir = "$repoRoot/$plat"
   if (-not (Test-Path $outputDir)) {
     New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
   }
 
   # 1. global-rules shell (windsurf has one, dsh uses skills/imp/SKILL.md as entry)
-  $globalRulesShell = "$platDir\global-rules.shell.md"
+  $globalRulesShell = "$platDir/global-rules.shell.md"
   if (Test-Path $globalRulesShell) {
-    $outputPath = "$outputDir\global_rules.md"
+    $outputPath = "$outputDir/global_rules.md"
     $shellContent = Get-Content $globalRulesShell -Raw -Encoding UTF8
     $result = Invoke-Injection $shellContent $coreDir
     Set-Content -Path $outputPath -Value $result.Content -Encoding UTF8 -NoNewline
@@ -85,12 +87,12 @@ foreach ($plat in $platforms) {
   }
 
   # 2. skills/
-  $skillsDir = "$platDir\skills"
+  $skillsDir = "$platDir/skills"
   if (Test-Path $skillsDir) {
     $skillShells = Get-ChildItem $skillsDir -Recurse -Filter "SKILL.md"
     foreach ($shell in $skillShells) {
       $relativePath = $shell.FullName.Substring($skillsDir.Length).TrimStart('\','/')
-      $outputPath = "$outputDir\skills\$relativePath"
+      $outputPath = "$outputDir/skills/$relativePath"
       $outputParent = Split-Path -Parent $outputPath
       if (-not (Test-Path $outputParent)) {
         New-Item -ItemType Directory -Force -Path $outputParent | Out-Null
