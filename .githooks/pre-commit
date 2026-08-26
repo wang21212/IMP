@@ -1,5 +1,6 @@
 #!/bin/sh
 # IMP pre-commit hook — auto-rebuild windsurf/ and dsh/ from core/
+# 产物不入库，但 build 确保本地产物最新（部署时直接用）
 # Cross-platform: works on Windows (Git Bash) and macOS/Linux
 
 echo "[IMP] pre-commit: auto-rebuilding platform skills..."
@@ -20,7 +21,5 @@ else
   exit 0
 fi
 
-# Stage generated outputs
-git add windsurf/ dsh/
-
-echo "[IMP] pre-commit: rebuild complete, staged windsurf/ and dsh/"
+# 产物不入库，不 git add
+echo "[IMP] pre-commit: rebuild complete (产物不入库，本地部署时用)"

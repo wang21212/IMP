@@ -1,15 +1,28 @@
 # IMP → DHS (DeepSeek Harness) 一键部署脚本
-# 1) 7 个 Skills  →  ~/.dsh/skills/imp*/SKILL.md
-# 2) IMP preset   →  ~/.dsh/.agent-presets/imp/（persona 含全局入口规则）
+# 自动先 build 再部署：1) Skills → ~/.dsh/skills/imp*/SKILL.md  2) IMP preset → ~/.dsh/.agent-presets/imp/
 # 用法: powershell -NoProfile -ExecutionPolicy Bypass -File .\deploy-dsh.ps1
 # 或 VSCode Tasks（IMP: Deploy to DSH）。部署后重启 DSH Web 或新开会话生效。
 
 $ErrorActionPreference = 'Stop'
 
-$skillsSrc = Join-Path $PSScriptRoot 'skills'
-$presetSrc = Join-Path $PSScriptRoot 'preset'
+# 路径解析（跨平台用 /）
+$adaptorDir = $PSScriptRoot -replace '\\','/'
+$repoRoot = (Split-Path -Parent (Split-Path -Parent $adaptorDir)) -replace '\\','/'
 
-if (-not (Test-Path $skillsSrc)) { throw "skills source not found: $skillsSrc" }
+# --- 0. 先 build，确保 dsh/ 产物最新 ---
+$buildScript = "$repoRoot/scripts/build.ps1"
+if (Test-Path $buildScript) {
+  Write-Host "[deploy] building dsh platform skills..." -ForegroundColor Cyan
+  & $buildScript -Platform dsh
+} else {
+  Write-Warning "build.ps1 not found at $buildScript, skipping rebuild"
+}
+
+# --- 1. 从 build 产物目录取 skills ---
+$skillsSrc = "$repoRoot/dsh/skills"
+$presetSrc = "$adaptorDir/preset"
+
+if (-not (Test-Path $skillsSrc)) { throw "skills build output not found: $skillsSrc (did build succeed?)" }
 if (-not (Test-Path $presetSrc)) { throw "preset source not found: $presetSrc" }
 
 $dshHome = Join-Path $env:USERPROFILE '.dsh'

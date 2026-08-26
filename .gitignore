@@ -2,6 +2,12 @@
 Thumbs.db
 .windsurf/
 
+# build 产物：由 scripts/build.ps1 从 core/ + adaptors/ 生成，不入库
+# clone 后跑 build.ps1 或 deploy 脚本（自动先 build）即可生成
+# 只忽略仓库根下的产物目录，不影响 adaptors/ 下的源文件
+/windsurf/
+/dsh/
+
 # IMP 自迭代产物：trace 和 evaluation 是本机运行时数据，不入库
 # 但 memory/ 入库（含 direction/intent-log/milestone/session，是 IMP 自身的项目状态）
 .imp/trace/

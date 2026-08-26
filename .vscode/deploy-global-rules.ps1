@@ -1,4 +1,21 @@
-$src = Join-Path $PSScriptRoot "..\windsurf\global_rules.md"
+# IMP → Windsurf 全局规则部署（自动先 build）
+$ErrorActionPreference = 'Stop'
+
+$repoRoot = (Split-Path -Parent $PSScriptRoot) -replace '\\','/'
+
+# --- 0. 先 build，确保 windsurf/ 产物最新 ---
+$buildScript = "$repoRoot/scripts/build.ps1"
+if (Test-Path $buildScript) {
+  Write-Host "[deploy] building windsurf platform..." -ForegroundColor Cyan
+  & $buildScript -Platform windsurf
+} else {
+  Write-Warning "build.ps1 not found at $buildScript, skipping rebuild"
+}
+
+# --- 1. 从 build 产物取 global_rules.md ---
+$src = "$repoRoot/windsurf/global_rules.md"
+if (-not (Test-Path $src)) { throw "global_rules.md build output not found: $src" }
+
 $memoriesDst = Join-Path $env:USERPROFILE ".codeium\windsurf\memories\global_rules.md"
 $workflowsDir = Join-Path $env:USERPROFILE ".codeium\windsurf\global_workflows"
 $workflowsDst = Join-Path $workflowsDir "imp-globalrule.md"

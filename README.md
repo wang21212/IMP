@@ -73,23 +73,39 @@ IMP 的应对方案是：**把需要跨对话保留的状态，以结构化 Mark
 
 ## 框架结构
 
-IMP 由三层组成：
+IMP 仓库采用「核心协议 + 平台适配层」架构，产物不入库：
+
+```
+core/              核心协议（平台无关，唯一修改源）
+adaptors/          平台适配层（壳模板 + 部署脚本 + preset）
+  windsurf/        Windsurf 壳（含注入占位符）
+  dsh/             DSH 壳 + 部署脚本 + preset
+scripts/           build.ps1（core/ + adaptors/ → 产物）+ discover-projects.ps1
+.githooks/         pre-commit/post-merge（改 core/ 后自动 build）
+
+windsurf/          build 产物（gitignore，不入库）
+dsh/               build 产物（gitignore，不入库）
+```
+
+**唯一修改源是 `core/`**。改 `core/` 后跑 `build.ps1`（或 commit 时 hook 自动跑），从 `core/ + adaptors/` 生成 `windsurf/` 和 `dsh/` 产物目录，再部署到本机。
+
+运行时三层：
 
 ```
 Layer 1: Global Rules（入口路由器）
   每次对话自动加载，判断问题级别，路由到对应 Skill
-  → 对应文件：windsurf/global_rules.md
+  → 对应文件：windsurf/global_rules.md（build 产物）
 
 Layer 2: Global Skills（编排逻辑）
-  6 个 Skill，覆盖全部工作场景，包含完整 SOP
-  → 对应文件：windsurf/skills/imp-*/SKILL.md
+  7 个 Skill，覆盖全部工作场景，包含完整 SOP
+  → 对应文件：windsurf/skills/imp-*/SKILL.md（build 产物）
 
 Layer 3: Project Memory（状态存储）
   4 个 Markdown 文件，持久化项目状态，跨对话保持上下文
   → 存放位置：[项目根]/.imp/memory/（跨工具统一状态根，Windsurf / DHS / 其他平台共享）
 ```
 
-### 6 个 Skill
+### 7 个 Skill
 
 | Skill | 职责 | 触发时机 |
 |-------|------|----------|
@@ -99,6 +115,7 @@ Layer 3: Project Memory（状态存储）
 | `imp-architect` | 骨架变更流程——影响分析、人工确认、由下至上执行 | 需改数据模型/架构/部署时 |
 | `imp-debug` | Bug 修复流程——复现→定位→皮骨检查→最小改动 | 修复已有功能错误行为 |
 | `imp-verify` | 落地验证——每个工作单元完成后必须执行，输出结构化结果 | 任何工作单元完成后 |
+| `imp-reflect` | 自迭代评估——汇聚本机所有项目 trace，识别模式，产出评估报告和候选改进项 | 用户说「评估 IMP」时 |
 
 ### 4 个 Memory 文件
 
@@ -122,35 +139,42 @@ Layer 3: Project Memory（状态存储）
 
 ## 安装（Windsurf）
 
-### Step 1：安装 Global Rules
+### Step 0：Build 产物
 
-将 `windsurf/global_rules.md` 的内容**追加**到本机全局规则文件：
+clone 仓库后，`windsurf/` 和 `dsh/` 目录不存在（产物不入库）。先跑 build：
 
-```
-~/.codeium/windsurf/memories/global_rules.md
-```
-
-注意是追加，不是覆盖，避免覆盖已有的其他规则。
-
-### Step 2：安装 Skills
-
-将 `windsurf/skills/` 下的6个文件夹完整复制到：
-
-```
-~/.codeium/windsurf/skills/
+```powershell
+pwsh scripts/build.ps1
 ```
 
-每个文件夹结构为 `imp-xxx/SKILL.md`，重启 Windsurf 后自动识别。
+这会从 `core/ + adaptors/` 生成 `windsurf/` 和 `dsh/` 产物目录。
 
-也可以使用项目内置的 VS Code 任务一键部署（`Ctrl+Shift+B`）。
+> 也可以跳过手动 build，直接跑下面的 deploy 脚本（会自动先 build 再部署）。
 
-### Step 3：初始化项目 Memory
+### Step 1：安装 Global Rules + Skills（一键部署）
+
+项目内置 VS Code 任务（`Ctrl+Shift+B`），或手动跑部署脚本：
+
+```powershell
+pwsh .vscode/deploy-global-rules.ps1   # 部署 global_rules.md（自动先 build）
+pwsh .vscode/deploy-skills.ps1         # 部署 7 个 skills（自动先 build）
+```
+
+部署脚本会自动先 build 再复制到 `~/.codeium/windsurf/`，重启 Windsurf 后生效。
+
+### Step 2：初始化项目 Memory
 
 在目标项目中**新开一个对话**，说「接手项目」，触发 `imp-onboard`。
 
 AI 会自动扫描项目结构，产出接手备忘录，并在项目根目录创建 `.imp/memory/` 及4个 Memory 文件。
 
-> 旧版状态根 `.windsurf/memory/` 已统一迁移到 `.imp/memory/`：已有项目的旧状态用 `dsh/migrate-memory.ps1 -Project <路径>` 一键迁移，之后各工具读写同一份 memory，换工具不丢上下文。
+> 旧版状态根 `.windsurf/memory/` 已统一迁移到 `.imp/memory/`：已有项目的旧状态用 `adaptors/dsh/migrate-memory.ps1 -Project <路径>` 一键迁移，之后各工具读写同一份 memory，换工具不丢上下文。
+
+### 安装到 DHS
+
+```powershell
+pwsh adaptors/dsh/deploy-dsh.ps1   # 自动先 build，再部署 skills + preset 到 ~/.dsh/
+```
 
 ---
 
