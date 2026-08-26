@@ -42,7 +42,7 @@ $agentRegistry = @(
   @{ Name = "openclaw";    Script = "openclaw.ps1";    DisplayName = "OpenClaw";               IsGlobal = $true  }
   @{ Name = "pi-agent";    Script = "pi-agent.ps1";    DisplayName = "Pi Agent";               IsGlobal = $true  }
   @{ Name = "workbuddy";   Script = "workbuddy.ps1";   DisplayName = "WorkBuddy (腾讯)";        IsGlobal = $true  }
-  @{ Name = "doubao";      Script = "doubao.ps1";      DisplayName = "Doubao (豆包 TUI)";       IsGlobal = $true  }
+  @{ Name = "trae";        Script = "trae.ps1";        DisplayName = "TRAE (字节跳动)";         IsGlobal = $true  }
   @{ Name = "cursor";      Script = "cursor.ps1";      DisplayName = "Cursor";                 IsGlobal = $false }
   @{ Name = "devin";       Script = "devin.ps1";       DisplayName = "Devin";                  IsGlobal = $false }
 )

@@ -192,7 +192,7 @@ pwsh install.ps1 cursor --target=/path   # 项目级 agent 部署到指定项目
 | OpenClaw | `~/.openclaw/workspace/` |
 | Pi Agent | `~/.pi/agent/rules/` |
 | WorkBuddy (腾讯) | `~/.codebuddy/` |
-| Doubao (豆包 TUI) | `~/.doubao/skills/` |
+| TRAE (字节跳动) | `~/.trae-cn/` |
 
 **项目级**（每个项目单独部署）：
 

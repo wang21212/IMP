@@ -53,7 +53,7 @@ core skill 文件统一含 `name`, `description`, `whenToUse` 三个字段。
 | OpenClaw | 无 frontmatter（AGENTS.md + 参考文件） |
 | Pi Agent | 无 frontmatter（rules 目录 .md 文件） |
 | WorkBuddy (腾讯) | name, description |
-| Doubao (豆包 TUI) | name, description, whenToUse |
+| TRAE (字节跳动) | name, description |
 | Cursor | description, alwaysApply（Cursor 特有格式） |
 | Devin | name, description |
 
