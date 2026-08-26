@@ -1,62 +1,54 @@
-<#
-.SYNOPSIS
-  IMP 构建脚本 — 把 core/ 核心协议注入各平台适配壳，生成最终 skill 文件。
-
-.DESCRIPTION
-  扫描 adaptors/<platform>/ 下的壳文件（含 <!-- IMP-CORE-INJECT: xxx --> 标记），
-  把 core/xxx.md 全文替换到标记位置，输出到 <platform>/ 对应路径。
-  core/ 是唯一修改源，生成的 windsurf/ 和 dsh/ 是产物，禁止手改。
-
-.PARAMETER Platform
-  指定只构建某个平台（windsurf / dsh）。不指定则构建全部。
-
-.EXAMPLE
-  .\scripts\build.ps1
-  .\scripts\build.ps1 -Platform windsurf
-#>
-param(
-  [string]$Platform
-)
+# IMP build script - inject core/ into platform adaptor shells
+param([string]$Platform)
 
 $ErrorActionPreference = "Stop"
-$repoRoot = Split-Path -Parent $PSScriptRoot
-$coreDir = Join-Path $repoRoot "core"
-$adaptorsDir = Join-Path $repoRoot "adaptors"
+
+# Resolve repo root
+if ($PSScriptRoot) {
+  $repoRoot = Split-Path -Parent $PSScriptRoot
+} elseif ($MyInvocation.MyCommand.Path) {
+  $repoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
+} else {
+  $repoRoot = (Get-Location).Path
+}
+
+$coreDir = "$repoRoot\core"
+$adaptorsDir = "$repoRoot\adaptors"
 
 if (-not (Test-Path $coreDir)) {
-  Write-Error "core/ 目录不存在: $coreDir"
+  Write-Error "core/ not found: $coreDir"
   exit 1
 }
 
+# Determine platforms to build
 if ($Platform) {
   $platforms = @($Platform)
 } else {
-  $platforms = Get-ChildItem $adaptorsDir -Directory | Select-Object -ExpandProperty Name
+  $platforms = @(Get-ChildItem $adaptorsDir -Directory | Select-Object -ExpandProperty Name)
 }
 
 if ($platforms.Count -eq 0) {
-  Write-Error "未找到任何平台适配目录: $adaptorsDir"
+  Write-Error "No adaptor platforms found in: $adaptorsDir"
   exit 1
 }
 
-# 注入函数：把壳内容中的 <!-- IMP-CORE-INJECT: xxx --> 替换为 core/xxx.md 全文
+# Injection function: replace <!-- IMP-CORE-INJECT: xxx --> with core/xxx.md content
 function Invoke-Injection {
-  param([string]$Content, [string]$CoreDir)
+  param([string]$Content, [string]$CoreDirPath)
   $pattern = '<!--\s*IMP-CORE-INJECT:\s*(\S+)\s*-->'
   $matches = [regex]::Matches($Content, $pattern)
   $result = $Content
   $count = 0
-  # 从后往前替换，避免索引偏移
   for ($i = $matches.Count - 1; $i -ge 0; $i--) {
     $m = $matches[$i]
     $coreName = $m.Groups[1].Value
-    $coreFile = Join-Path $CoreDir "$coreName.md"
+    $coreFile = "$CoreDirPath\$coreName.md"
     if (Test-Path $coreFile) {
       $coreContent = (Get-Content $coreFile -Raw -Encoding UTF8).TrimEnd()
       $result = $result.Substring(0, $m.Index) + $coreContent + $result.Substring($m.Index + $m.Length)
       $count++
     } else {
-      Write-Warning "核心文件不存在: $coreFile"
+      Write-Warning "Core file not found: $coreFile"
     }
   }
   return @{ Content = $result; InjectionCount = $count }
@@ -66,40 +58,39 @@ $totalFiles = 0
 $totalInjections = 0
 
 foreach ($plat in $platforms) {
-  $platDir = Join-Path $adaptorsDir $plat
+  $platDir = "$adaptorsDir\$plat"
   if (-not (Test-Path $platDir)) {
-    Write-Warning "平台目录不存在，跳过: $platDir"
+    Write-Warning "Platform dir not found, skipping: $platDir"
     continue
   }
 
   Write-Host ""
-  Write-Host "=== 构建平台: $plat ===" -ForegroundColor Cyan
+  Write-Host "=== Building: $plat ===" -ForegroundColor Cyan
 
-  $outputDir = Join-Path $repoRoot $plat
+  $outputDir = "$repoRoot\$plat"
   if (-not (Test-Path $outputDir)) {
     New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
   }
 
-  # 1. global-rules（windsurf 有独立 shell，dsh 入口在 skills/imp/SKILL.md）
-  $globalRulesShell = Join-Path $platDir "global-rules.shell.md"
+  # 1. global-rules shell (windsurf has one, dsh uses skills/imp/SKILL.md as entry)
+  $globalRulesShell = "$platDir\global-rules.shell.md"
   if (Test-Path $globalRulesShell) {
-    $outputPath = Join-Path $outputDir "global_rules.md"
+    $outputPath = "$outputDir\global_rules.md"
     $shellContent = Get-Content $globalRulesShell -Raw -Encoding UTF8
     $result = Invoke-Injection $shellContent $coreDir
     Set-Content -Path $outputPath -Value $result.Content -Encoding UTF8 -NoNewline
     $totalFiles++
     $totalInjections += $result.InjectionCount
-    Write-Host "  [global-rules] -> global_rules.md ($($result.InjectionCount) 注入)" -ForegroundColor Green
+    Write-Host "  [global-rules] -> global_rules.md ($($result.InjectionCount) injections)" -ForegroundColor Green
   }
 
   # 2. skills/
-  $skillsDir = Join-Path $platDir "skills"
+  $skillsDir = "$platDir\skills"
   if (Test-Path $skillsDir) {
     $skillShells = Get-ChildItem $skillsDir -Recurse -Filter "SKILL.md"
     foreach ($shell in $skillShells) {
       $relativePath = $shell.FullName.Substring($skillsDir.Length).TrimStart('\','/')
-      $outputPath = Join-Path $outputDir "skills"
-      $outputPath = Join-Path $outputPath $relativePath
+      $outputPath = "$outputDir\skills\$relativePath"
       $outputParent = Split-Path -Parent $outputPath
       if (-not (Test-Path $outputParent)) {
         New-Item -ItemType Directory -Force -Path $outputParent | Out-Null
@@ -109,12 +100,12 @@ foreach ($plat in $platforms) {
       Set-Content -Path $outputPath -Value $result.Content -Encoding UTF8 -NoNewline
       $totalFiles++
       $totalInjections += $result.InjectionCount
-      Write-Host "  [skill] $relativePath ($($result.InjectionCount) 注入)" -ForegroundColor Green
+      Write-Host "  [skill] $relativePath ($($result.InjectionCount) injections)" -ForegroundColor Green
     }
   }
 }
 
 Write-Host ""
-Write-Host "=== 构建完成 ===" -ForegroundColor Cyan
-Write-Host "生成文件: $totalFiles"
-Write-Host "总注入数: $totalInjections"
+Write-Host "=== Build complete ===" -ForegroundColor Cyan
+Write-Host "Files generated: $totalFiles"
+Write-Host "Total injections: $totalInjections"

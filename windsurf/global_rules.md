@@ -1,4 +1,4 @@
-# IMP 全局入口规则 (Windsurf Global Rules)
+﻿# IMP 全局入口规则 (Windsurf Global Rules)
 
 # IMP 全局入口规则（核心协议）
 
