@@ -98,20 +98,25 @@ function Upsert-IMPContent {
   $marker = "# IMP"
   if (Test-Path $TargetPath) {
     $existing = Get-Content $TargetPath -Raw -Encoding UTF8
+    if (-not $existing) {
+      # 文件存在但为空，直接写入
+      Write-File $TargetPath $NewContent
+      return
+    }
     $idx = $existing.IndexOf($marker)
     if ($idx -ge 0) {
       $before = $existing.Substring(0, $idx).TrimEnd()
       if ($before.Length -gt 0) {
-        $merged = $before + "`n`n" + $newContent.TrimStart()
+        $merged = $before + "`n`n" + $NewContent.TrimStart()
       } else {
-        $merged = $newContent
+        $merged = $NewContent
       }
     } else {
-      $merged = $existing.TrimEnd() + "`n`n" + $newContent.TrimStart()
+      $merged = $existing.TrimEnd() + "`n`n" + $NewContent.TrimStart()
     }
     Write-File $TargetPath $merged
   } else {
-    Write-File $TargetPath $newContent
+    Write-File $TargetPath $NewContent
   }
 }
 

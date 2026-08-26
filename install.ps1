@@ -38,6 +38,10 @@ $agentRegistry = @(
   @{ Name = "dsh";         Script = "dsh.ps1";         DisplayName = "DSH (DeepSeek Harness)";  IsGlobal = $true  }
   @{ Name = "claude-code"; Script = "claude-code.ps1"; DisplayName = "Claude Code";            IsGlobal = $true  }
   @{ Name = "codex";       Script = "codex.ps1";       DisplayName = "Codex (OpenAI CLI)";     IsGlobal = $true  }
+  @{ Name = "hermes";      Script = "hermes.ps1";      DisplayName = "Hermes (NousResearch)";  IsGlobal = $true  }
+  @{ Name = "openclaw";    Script = "openclaw.ps1";    DisplayName = "OpenClaw";               IsGlobal = $true  }
+  @{ Name = "pi-agent";    Script = "pi-agent.ps1";    DisplayName = "Pi Agent";               IsGlobal = $true  }
+  @{ Name = "codebuddy";   Script = "codebuddy.ps1";   DisplayName = "CodeBuddy (腾讯)";        IsGlobal = $true  }
   @{ Name = "cursor";      Script = "cursor.ps1";      DisplayName = "Cursor";                 IsGlobal = $false }
   @{ Name = "devin";       Script = "devin.ps1";       DisplayName = "Devin";                  IsGlobal = $false }
 )
@@ -110,6 +114,35 @@ function Deploy-ToAgent {
   if (-not $Agent.IsGlobal) { $deployArgs += @("-TargetDir", $targetDir) }
 
   & pwsh @deployArgs
+}
+
+# ── 管理员权限检测 ────────────────────────────────────────────
+function Test-IsAdmin {
+  # macOS/Linux 检测
+  if ($env:HOME -and $env:HOME -notmatch '^[A-Z]:') {
+    sudo -n true 2>$null
+    return ($LASTEXITCODE -eq 0)
+  }
+  # Windows — 用 Security.Principal 检测
+  try {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = [Security.Principal.WindowsPrincipal]$identity
+    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+  } catch {
+    return $false
+  }
+}
+
+$isAdmin = Test-IsAdmin
+if (-not $isAdmin) {
+  Write-Host ""
+  Write-Host "⚠️  当前非管理员/非 sudo 运行。" -ForegroundColor Yellow
+  Write-Host "   IMP installer 需要扫描本机各 agent 的安装目录，" -ForegroundColor Yellow
+  Write-Host "   部分目录可能需要管理员权限才能读取。" -ForegroundColor Yellow
+  Write-Host "   如果扫描结果不完整，请用管理员权限重新运行：" -ForegroundColor Yellow
+  Write-Host "     Windows: 以管理员身份打开 PowerShell → pwsh install.ps1" -ForegroundColor Yellow
+  Write-Host "     macOS:   sudo pwsh install.ps1" -ForegroundColor Yellow
+  Write-Host ""
 }
 
 # ── 主逻辑 ────────────────────────────────────────────────────

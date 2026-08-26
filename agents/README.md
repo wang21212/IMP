@@ -48,8 +48,12 @@ core skill 文件统一含 `name`, `description`, `whenToUse` 三个字段。
 | Windsurf | name, description（无 whenToUse） |
 | DSH | name, description, whenToUse |
 | Claude Code | 无 frontmatter（slash commands） |
-| Cursor | description, alwaysApply（Cursor 特有格式） |
 | Codex | name, description, whenToUse |
+| Hermes | name, description, whenToUse |
+| OpenClaw | 无 frontmatter（AGENTS.md + 参考文件） |
+| Pi Agent | 无 frontmatter（rules 目录 .md 文件） |
+| CodeBuddy | name, description |
+| Cursor | description, alwaysApply（Cursor 特有格式） |
 | Devin | name, description |
 
 ### 项目级 vs 全局

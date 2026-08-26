@@ -186,6 +186,10 @@ pwsh install.ps1 cursor --target=/path   # 项目级 agent 部署到指定项目
 | DSH (DeepSeek Harness) | `~/.dsh/` | 全局 |
 | Claude Code | `~/.claude/` | 全局 |
 | Codex (OpenAI CLI) | `~/.codex/` + `~/.agents/` | 全局 |
+| Hermes (NousResearch) | `~/.hermes/skills/` | 全局 |
+| OpenClaw | `~/.openclaw/workspace/` | 全局 |
+| Pi Agent | `~/.pi/agent/rules/` | 全局 |
+| CodeBuddy (腾讯) | `~/.codebuddy/` | 全局 |
 | Cursor | `<项目>/.cursor/rules/` | 项目级 |
 | Devin | `<项目>/.devin/skills/` | 项目级 |
 

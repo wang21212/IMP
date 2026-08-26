@@ -62,7 +62,7 @@ Global Rules 判定为「新项目」或用户说「接手/断点继续/新项�
 - `milestone-state.md`（空文件，首行写 `# Milestone State`；后续按追加快照模式写入，格式见 imp-architect Step 4）
 - `session-state.md`（空模板）
 
-**迁移旧状态**：若项目根存在 `.windsurf/memory/`（旧版状态根），把其中 4 个文件复制到 `.imp/memory/`（不删除原文件），并在 session-state.md 顶部注明「已从 .windsurf/memory/ 迁移」。可用 `dsh/migrate-memory.ps1` 一键迁移。
+**迁移旧状态**：若项目根存在 `.windsurf/memory/`（旧版状态根），把其中 4 个文件复制到 `.imp/memory/`（不删除原文件），并在 session-state.md 顶部注明「已从 .windsurf/memory/ 迁移」。可用 `scripts/migrate-memory.ps1` 一键迁移。
 
 ### Phase 5: 登记到 IMP 仓库项目注册表（自迭代回路）
 

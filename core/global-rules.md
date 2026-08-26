@@ -1,6 +1,6 @@
 # IMP 全局入口规则（核心协议）
 
-> 状态根统一为 `<项目根>/.imp/memory/`（跨工具共享：Windsurf / DHS / Devin / WorkBuddy / 豆包 / 其他平台读写同一份）。旧版 `.windsurf/memory/` 状态请用 `dsh/migrate-memory.ps1` 迁移。
+> 状态根统一为 `<项目根>/.imp/memory/`（跨工具共享：Windsurf / DHS / Devin / WorkBuddy / 豆包 / 其他平台读写同一份）。旧版 `.windsurf/memory/` 状态请用 `scripts/migrate-memory.ps1` 迁移。
 
 ## Step 0: 断点恢复（每次对话必执行）
 检查 `.imp/memory/session-state.md`：

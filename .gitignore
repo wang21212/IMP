@@ -6,6 +6,9 @@ Thumbs.db
 /dsh/
 /.windsurf/
 
+# Cursor 项目级部署产物（install.ps1 cursor 部署到当前目录时生成）
+/.cursor/
+
 # IMP 自身运行时状态（自举）：memory/trace/evaluations/registry 都是本机运行时数据
 # clone 后由 imp-onboard 或 discover-projects.ps1 自动生成
 /.imp/
