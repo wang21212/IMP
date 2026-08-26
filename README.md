@@ -73,36 +73,51 @@ IMP 的应对方案是：**把需要跨对话保留的状态，以结构化 Mark
 
 ## 框架结构
 
-IMP 仓库采用「核心协议 + 平台适配层」架构，产物不入库：
+IMP 仓库采用「核心协议 + agent 部署脚本」架构，无 build 步骤，无产物目录：
 
 ```
 core/              核心协议（平台无关，唯一修改源）
-adaptors/          平台适配层（壳模板 + 部署脚本 + preset）
-  windsurf/        Windsurf 壳（含注入占位符）
-  dsh/             DSH 壳 + 部署脚本 + preset
-scripts/           build.ps1（core/ + adaptors/ → 产物）+ discover-projects.ps1
-.githooks/         pre-commit/post-merge（改 core/ 后自动 build）
+  global-rules.md     入口路由器
+  imp-*.md            7 个 skill（含 frontmatter）
+  imp-trace-spec.md   trace 事件规范
 
-windsurf/          build 产物（gitignore，不入库）
-dsh/               build 产物（gitignore，不入库）
+agents/            agent 部署脚本（每个 agent 一个薄脚本）
+  _common.ps1         共享函数（解析 core、写文件、upsert）
+  windsurf.ps1        部署到 ~/.codeium/windsurf/
+  dsh.ps1             部署到 ~/.dsh/
+  claude-code.ps1     部署到 ~/.claude/
+  codex.ps1           部署到 ~/.codex/ + ~/.agents/
+  cursor.ps1          部署到 <项目>/.cursor/rules/
+  devin.ps1           部署到 <项目>/.devin/skills/
+  dsh-extras/         DSH 平台额外文件（preset、tool-mapping）
+  README.md           如何添加新 agent
+
+install.ps1        唯一入口：scan / all / specific agent
+scripts/           discover-projects.ps1（扫描本机 IMP 项目）
 ```
 
-**唯一修改源是 `core/`**。改 `core/` 后跑 `build.ps1`（或 commit 时 hook 自动跑），从 `core/ + adaptors/` 生成 `windsurf/` 和 `dsh/` 产物目录，再部署到本机。
+**核心设计**：`core/` 是唯一修改源。`install.ps1` 读 `core/`，运行时加 frontmatter，直接写到各 agent 的配置位置。没有 build 步骤，没有产物目录，没有占位符注入。
 
 运行时三层：
 
 ```
 Layer 1: Global Rules（入口路由器）
   每次对话自动加载，判断问题级别，路由到对应 Skill
-  → 对应文件：windsurf/global_rules.md（build 产物）
+  → Windsurf: ~/.codeium/windsurf/memories/global_rules.md
+  → Claude Code: ~/.claude/CLAUDE.md
+  → Codex: ~/.codex/AGENTS.md
+  → DSH: ~/.dsh/skills/imp/SKILL.md（入口 skill）
 
 Layer 2: Global Skills（编排逻辑）
   7 个 Skill，覆盖全部工作场景，包含完整 SOP
-  → 对应文件：windsurf/skills/imp-*/SKILL.md（build 产物）
+  → Windsurf: ~/.codeium/windsurf/skills/imp-*/SKILL.md
+  → Claude Code: ~/.claude/commands/imp-*.md
+  → Codex: ~/.agents/skills/imp-*/SKILL.md
+  → DSH: ~/.dsh/skills/imp-*/SKILL.md
 
 Layer 3: Project Memory（状态存储）
   4 个 Markdown 文件，持久化项目状态，跨对话保持上下文
-  → 存放位置：[项目根]/.imp/memory/（跨工具统一状态根，Windsurf / DHS / 其他平台共享）
+  → 存放位置：[项目根]/.imp/memory/（跨工具统一状态根，所有 agent 共享）
 ```
 
 ### 7 个 Skill
@@ -137,44 +152,54 @@ Layer 3: Project Memory（状态存储）
 
 ---
 
-## 安装（Windsurf）
+## 安装
 
-### Step 0：Build 产物
-
-clone 仓库后，`windsurf/` 和 `dsh/` 目录不存在（产物不入库）。先跑 build：
+### 一键安装（推荐）
 
 ```powershell
-pwsh scripts/build.ps1
+git clone https://github.com/wang21212/IMP.git
+cd IMP
+pwsh install.ps1
 ```
 
-这会从 `core/ + adaptors/` 生成 `windsurf/` 和 `dsh/` 产物目录。
+installer 会：
+1. 扫描本机已安装的 agent（Windsurf / DSH / Claude Code / Codex / Cursor / Devin）
+2. 列出检测到的 agent，让你选择部署到全部或某一个
+3. 读 `core/`，加 frontmatter，直接写到各 agent 的配置位置
 
-> 也可以跳过手动 build，直接跑下面的 deploy 脚本（会自动先 build 再部署）。
-
-### Step 1：安装 Global Rules + Skills（一键部署）
-
-项目内置 VS Code 任务（`Ctrl+Shift+B`），或手动跑部署脚本：
+### 命令行模式
 
 ```powershell
-pwsh .vscode/deploy-global-rules.ps1   # 部署 global_rules.md（自动先 build）
-pwsh .vscode/deploy-skills.ps1         # 部署 7 个 skills（自动先 build）
+pwsh install.ps1 scan                    # 只扫描，不部署
+pwsh install.ps1 all                     # 部署到所有检测到的 agent
+pwsh install.ps1 windsurf                # 只部署到 Windsurf
+pwsh install.ps1 windsurf dsh            # 部署到 Windsurf + DSH
+pwsh install.ps1 all --dry-run           # 干跑，只显示会做什么
+pwsh install.ps1 cursor --target=/path   # 项目级 agent 部署到指定项目
 ```
 
-部署脚本会自动先 build 再复制到 `~/.codeium/windsurf/`，重启 Windsurf 后生效。
+### 支持的 Agent
 
-### Step 2：初始化项目 Memory
+| Agent | 部署位置 | 类型 |
+|-------|----------|------|
+| Windsurf (Cascade) | `~/.codeium/windsurf/` | 全局 |
+| DSH (DeepSeek Harness) | `~/.dsh/` | 全局 |
+| Claude Code | `~/.claude/` | 全局 |
+| Codex (OpenAI CLI) | `~/.codex/` + `~/.agents/` | 全局 |
+| Cursor | `<项目>/.cursor/rules/` | 项目级 |
+| Devin | `<项目>/.devin/skills/` | 项目级 |
 
-在目标项目中**新开一个对话**，说「接手项目」，触发 `imp-onboard`。
+### 初始化项目 Memory
 
-AI 会自动扫描项目结构，产出接手备忘录，并在项目根目录创建 `.imp/memory/` 及4个 Memory 文件。
+安装 IMP 到 agent 后，在目标项目中**新开一个对话**，说「接手项目」，触发 `imp-onboard`。
 
-> 旧版状态根 `.windsurf/memory/` 已统一迁移到 `.imp/memory/`：已有项目的旧状态用 `adaptors/dsh/migrate-memory.ps1 -Project <路径>` 一键迁移，之后各工具读写同一份 memory，换工具不丢上下文。
+AI 会自动扫描项目结构，产出接手备忘录，并在项目根目录创建 `.imp/memory/` 及 4 个 Memory 文件。
 
-### 安装到 DHS
+### 添加新 Agent
 
-```powershell
-pwsh adaptors/dsh/deploy-dsh.ps1   # 自动先 build，再部署 skills + preset 到 ~/.dsh/
-```
+IMP 的 agent 定义：LLM 控制的、通过 read/write/create/delete 操作文件实现用户需求的多步骤操作实体。
+
+添加新 agent 只需在 `agents/` 下创建一个 `<agent-name>.ps1`，实现 detect + deploy 两个 action。详见 `agents/README.md`。
 
 ---
 
@@ -192,30 +217,37 @@ AI 在每次对话开始会：
 
 ---
 
-## 移植到其他平台
+## 添加新 Agent
 
-IMP 的三层结构（入口规则 / 编排逻辑 / 状态存储）可以映射到任何支持自定义上下文的 AI 编程平台。
+IMP 的 agent 定义：LLM 控制的、通过 read/write/create/delete 操作文件实现用户需求的多步骤操作实体。
 
-**任何平台只要具备三点，IMP 就可以移植：**
+任何工具只要具备三点就能适配：
 - 全局系统提示注入（对应 Global Rules）
 - 可复用的 Prompt 片段或命令（对应 Skills）
 - 可读写本地 Markdown 文件（对应 Project Memory）
 
-### Claude Code
+在 `agents/` 下创建 `<agent-name>.ps1`，实现 detect + deploy 两个 action：
 
-| IMP 概念 | 对应机制 |
-|----------|----------|
-| Global Rules | `~/.claude/CLAUDE.md`（全局）或项目根 `CLAUDE.md` |
-| Global Skills | `.claude/commands/` 目录下的自定义 Slash Command |
-| Project Memory | 项目内 Markdown 文件，在 `CLAUDE.md` 中通过 `@file` 引用 |
+```powershell
+param([string]$CoreDir, [string]$AgentsDir, [switch]$DryRun, [string]$Action = "deploy")
 
-### Cursor
+. "$AgentsDir/_common.ps1"
 
-| IMP 概念 | 对应机制 |
-|----------|----------|
-| Global Rules | Cursor Settings → Rules for AI（全局）或 `.cursorrules` |
-| Global Skills | `.cursor/rules/` 目录下的 `.mdc` 规则文件 |
-| Project Memory | 项目内 Markdown 文件，通过 `@file` 引用 |
+switch ($Action) {
+  "detect" {
+    if (Test-Path "~/.your-agent") { Write-Output "found" } else { Write-Output "notfound" }
+    exit 0
+  }
+  "deploy" {
+    # 读 core，加 frontmatter，写到 agent 位置
+    $globalRules = Get-CoreGlobalRules $CoreDir
+    $skills = Get-CoreSkills $CoreDir
+    # ... 写到 ~/.your-agent/ 的对应位置
+  }
+}
+```
+
+然后在 `install.ps1` 的 `$agentRegistry` 数组里加一行。详见 `agents/README.md`。
 
 ---
 

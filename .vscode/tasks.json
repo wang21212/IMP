@@ -2,90 +2,30 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "IMP: Deploy Skills to Local Windsurf",
+      "label": "IMP: Install (scan + choose)",
       "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}\\.vscode\\deploy-skills.ps1"
-      ],
-      "group": "build",
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      },
+      "command": "pwsh",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/install.ps1"],
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "reveal": "always", "panel": "shared" },
       "problemMatcher": []
     },
     {
-      "label": "IMP: Deploy Global Rules",
+      "label": "IMP: Install to All Detected Agents",
       "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}\\.vscode\\deploy-global-rules.ps1"
-      ],
+      "command": "pwsh",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/install.ps1", "all"],
       "group": "build",
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      },
+      "presentation": { "reveal": "always", "panel": "shared" },
       "problemMatcher": []
     },
     {
-      "label": "IMP: Deploy to DSH",
+      "label": "IMP: Scan Agents",
       "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}\\dsh\\deploy-dsh.ps1"
-      ],
+      "command": "pwsh",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/install.ps1", "scan"],
       "group": "build",
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "IMP: Migrate Memory (.windsurf → .imp)",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}\\dsh\\migrate-memory.ps1",
-        "-Project",
-        "${workspaceFolder}"
-      ],
-      "group": "build",
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "IMP: Deploy All (Skills + Global Rules)",
-      "dependsOn": [
-        "IMP: Deploy Skills to Local Windsurf",
-        "IMP: Deploy Global Rules"
-      ],
-      "dependsOrder": "sequence",
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
+      "presentation": { "reveal": "always", "panel": "shared" },
       "problemMatcher": []
     }
   ]
