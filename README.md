@@ -180,18 +180,27 @@ pwsh install.ps1 cursor --target=/path   # 项目级 agent 部署到指定项目
 
 ### 支持的 Agent
 
-| Agent | 部署位置 | 类型 |
-|-------|----------|------|
-| Windsurf (Cascade) | `~/.codeium/windsurf/` | 全局 |
-| DSH (DeepSeek Harness) | `~/.dsh/` | 全局 |
-| Claude Code | `~/.claude/` | 全局 |
-| Codex (OpenAI CLI) | `~/.codex/` + `~/.agents/` | 全局 |
-| Hermes (NousResearch) | `~/.hermes/skills/` | 全局 |
-| OpenClaw | `~/.openclaw/workspace/` | 全局 |
-| Pi Agent | `~/.pi/agent/rules/` | 全局 |
-| CodeBuddy (腾讯) | `~/.codebuddy/` | 全局 |
-| Cursor | `<项目>/.cursor/rules/` | 项目级 |
-| Devin | `<项目>/.devin/skills/` | 项目级 |
+**全局级**（装一次，所有项目生效）：
+
+| Agent | 部署位置 |
+|-------|----------|
+| Windsurf (Cascade) | `~/.codeium/windsurf/` |
+| DSH (DeepSeek Harness) | `~/.dsh/` |
+| Claude Code | `~/.claude/` |
+| Codex (OpenAI CLI) | `~/.codex/` + `~/.agents/` |
+| Hermes (NousResearch) | `~/.hermes/skills/` |
+| OpenClaw | `~/.openclaw/workspace/` |
+| Pi Agent | `~/.pi/agent/rules/` |
+| WorkBuddy (腾讯) | `~/.codebuddy/` |
+
+**项目级**（每个项目单独部署）：
+
+| Agent | 部署位置 |
+|-------|----------|
+| Cursor | `<项目>/.cursor/rules/` |
+| Devin | `<项目>/.devin/skills/` |
+
+> Cursor 和 Devin 没有文件式的全局配置目录。Cursor 的 User Rules 在 Settings UI 里配置（非文件），Devin 是云端 agent，skills 只在项目级 `.devin/skills/` 发现。这两个需要 `pwsh install.ps1 cursor --target=/path/to/project` 按项目部署。
 
 ### 初始化项目 Memory
 

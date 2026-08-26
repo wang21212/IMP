@@ -1,23 +1,25 @@
-# IMP → CodeBuddy (腾讯 WorkBuddy) 部署脚本
+# IMP → WorkBuddy (腾讯) 部署脚本
 # global rules → ~/.codebuddy/CODEBUDDY.md (upsert)
 # 7 skills → ~/.codebuddy/skills/imp-*/SKILL.md (frontmatter: name, description)
+#
+# 注：产品名为 WorkBuddy（腾讯云代码助手），配置目录为 ~/.codebuddy/
 
 param([string]$CoreDir, [string]$AgentsDir, [switch]$DryRun, [string]$Action = "deploy", [string]$TargetDir = ".")
 
 . "$AgentsDir/_common.ps1"
 
-$cbHome = Expand-Path "~/.codebuddy"
-$codebuddyMd = "$cbHome/CODEBUDDY.md"
-$skillsDst = "$cbHome/skills"
+$wbHome = Expand-Path "~/.codebuddy"
+$codebuddyMd = "$wbHome/CODEBUDDY.md"
+$skillsDst = "$wbHome/skills"
 
 switch ($Action) {
   "detect" {
-    if (Test-Path $cbHome) { Write-Output "found" } else { Write-Output "notfound" }
+    if (Test-Path $wbHome) { Write-Output "found" } else { Write-Output "notfound" }
     exit 0
   }
 
   "deploy" {
-    Write-Host "=== Deploying IMP to CodeBuddy (腾讯 WorkBuddy) ===" -ForegroundColor Cyan
+    Write-Host "=== Deploying IMP to WorkBuddy (腾讯) ===" -ForegroundColor Cyan
 
     # 1. Global rules → CODEBUDDY.md (upsert)
     $globalRules = Get-CoreGlobalRules $CoreDir
@@ -38,6 +40,6 @@ switch ($Action) {
       Write-Host "  [skill] $($skill.Name) → $skillPath" -ForegroundColor Green
     }
 
-    Write-Host "Done. CodeBuddy 自动加载 CODEBUDDY.md，skills 自动发现。" -ForegroundColor Yellow
+    Write-Host "Done. WorkBuddy 自动加载 CODEBUDDY.md，skills 自动发现。" -ForegroundColor Yellow
   }
 }
