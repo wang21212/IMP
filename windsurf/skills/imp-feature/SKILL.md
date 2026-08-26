@@ -3,6 +3,8 @@ name: imp-feature
 description: IMP 功能级迭代流程 — 读取项目上下文，任务拆解（3-7个），皮骨可行性检查，逐任务执行并验证，更新里程碑状态。进入前已完成 imp-intent 意图锁定。
 ---
 
+# IMP imp-feature - Windsurf
+
 # IMP Feature — 功能迭代流程
 
 ## 适用范围
@@ -29,6 +31,8 @@ N→N.1 迭代，骨架不动，新增或修改一个功能单元。
 - 本次任务是否涉及长反馈循环（构建镜像、安装大型依赖、部署流水线等，单次试错 > 分钟级）？是 → 执行前先做轻量预检（版本兼容性查证、dry-run、配置校验等），把能提前发现的错误在动手前排除
 - 通过 → 继续
 
+**皮骨检查完成后写入 trace 事件**：向 `<项目根>/.imp/trace/events.ndjson` 追加一条 `skin_bone_check` 事件（trace schema 见 imp-trace-spec）。若触发升级路由，同时追加一条 `route_upgrade` 事件。
+
 ### Step 4: 逐任务执行 + 逐任务调用 imp-verify
 
 每个任务完成后立即验证，不积累到最后。
@@ -46,6 +50,8 @@ N→N.1 迭代，骨架不动，新增或修改一个功能单元。
 
 **原则**：不让用户感到被频繁打扰，也不让用户对关键判断一无所知。
 
+**执行中纠偏时写入 trace 事件**：向 `<项目根>/.imp/trace/events.ndjson` 追加一条 `correction` 事件（trace schema 见 imp-trace-spec）。
+
 ### Step 5: 更新 milestone-state.md，写入 session-state
 
 在 `.imp/memory/milestone-state.md` **文件顶部追加一个新版本快照**（格式同 imp-architect Step 4 的追加快照模式）：
@@ -58,3 +64,4 @@ N→N.1 迭代，骨架不动，新增或修改一个功能单元。
 更新 `.imp/memory/session-state.md`。
 
 session-state 只写下次对话必须知道的最少信息，详略由 AI 自决：简单任务一行，复杂任务不超过5行。格式：任务 / 当前进展 / 下一步。
+

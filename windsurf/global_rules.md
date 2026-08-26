@@ -1,6 +1,8 @@
 # IMP 全局入口规则 (Windsurf Global Rules)
 
-> 状态根统一为 `<项目根>/.imp/memory/`（跨工具共享：Windsurf / DHS / 其他平台读写同一份）。旧版 `.windsurf/memory/` 状态请用 `dsh/migrate-memory.ps1` 迁移。
+# IMP 全局入口规则（核心协议）
+
+> 状态根统一为 `<项目根>/.imp/memory/`（跨工具共享：Windsurf / DHS / Devin / WorkBuddy / 豆包 / 其他平台读写同一份）。旧版 `.windsurf/memory/` 状态请用 `dsh/migrate-memory.ps1` 迁移。
 
 ## Step 0: 断点恢复（每次对话必执行）
 检查 `.imp/memory/session-state.md`：
@@ -29,3 +31,18 @@
 1. 骨架级禁令：判定为骨架级后，禁止直接执行任何代码变更，必须先完成 imp-intent + 影响分析 + 人确认
 2. 验证禁令：任何修改完成后，禁止只说「已完成」，必须执行 imp-verify 并输出验证结果
 3. 状态同步：每次对话结束前，自动更新 `.imp/memory/session-state.md`
+
+## Step 3: 自迭代回路（IMP 自身）
+当 cwd 为 IMP 源仓库本身时，IMP 走自身流程迭代自身（自举）：
+- IMP 仓库根的 `.imp/memory/` 存 IMP 自身的项目状态（direction/intent-log/milestone/session）
+- 各项目（含 IMP 仓库自身）的 IMP 执行事件流写入各自的 `.imp/trace/events.ndjson`
+- 用户说「评估 IMP」时触发 imp-reflect，汇聚本机所有项目 trace，产出评估报告和候选改进项
+- 候选改进项写入 IMP 仓库 `.imp/memory/intent-log.md`，等用户拍板后走 imp-intent → imp-architect/imp-feature 迭代 IMP 自身
+- 迭代 IMP 自身时，`core/` 是唯一修改源，禁止直接改 `windsurf/` 或 `dsh/` 下的生成文件
+
+## Step 4: 自迭代评估入口（元回路，不走级别判定）
+当用户说「评估 IMP」「imp-reflect」「回看 IMP」「迭代 IMP」时，**跳过 Step 1 级别判定**，直接路由到 imp-reflect。imp-reflect 不是开发任务，是 IMP 对自身的元评估，不属于四级问题分类。imp-reflect 产出的候选改进项才是开发任务，那些改进项再走标准 Step 1 级别判定。
+
+## Windsurf 平台说明
+
+本文件内容应追加到 `~/.codeium/windsurf/memories/global_rules.md`（追加，不覆盖）。Windsurf 每次对话自动加载全局规则，IMP 入口路由由此生效。

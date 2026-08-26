@@ -3,6 +3,8 @@ name: imp-architect
 description: IMP 骨架级变更流程 — 影响分析→强制人工书面确认→由下至上执行（数据→服务→API→前端）→更新 direction.md。最重流程，未经明确确认禁止任何代码变更。进入前已完成 imp-intent 意图锁定。
 ---
 
+# IMP imp-architect - Windsurf
+
 # IMP Architect — 骨架变更流程
 
 ## ⚠️ 强制规则：未经人工书面确认，禁止任何骨架级代码变更
@@ -37,6 +39,8 @@ description: IMP 骨架级变更流程 — 影响分析→强制人工书面确�
 
 数据层 → 服务层 → API 层 → 前端层，每层完成调用 imp-verify
 
+**皮骨检查写入 trace 事件**：向 `<项目根>/.imp/trace/events.ndjson` 追加一条 `skin_bone_check` 事件（trace schema 见 imp-trace-spec）。
+
 ### Step 4: 更新 direction.md + milestone-state.md
 
 更新 `.imp/memory/direction.md` 骨架现状。
@@ -65,3 +69,4 @@ milestone-state.md 采用**追加快照模式**（最新版本在文件最上方
 更新 `.imp/memory/session-state.md`。
 
 session-state 只写下次对话必须知道的最少信息，详略由 AI 自决：骨架变更影响面大，可适当多写，但不超过5行。格式：变更内容 / 执行进度（哪层完成/未完成）/ 下一步。
+

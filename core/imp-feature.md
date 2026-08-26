@@ -1,11 +1,3 @@
----
-name: imp-feature
-description: IMP 功能级迭代流程 — 读取项目上下文，任务拆解（3-7个），皮骨可行性检查，逐任务执行并验证，更新里程碑状态。进入前已完成 imp-intent 意图锁定。
-whenToUse: 由 imp 入口路由判定为功能级工作，且 imp-intent 已锁定意图时。
----
-
-# IMP imp-feature - DHS
-
 # IMP Feature — 功能迭代流程
 
 ## 适用范围
@@ -65,4 +57,3 @@ N→N.1 迭代，骨架不动，新增或修改一个功能单元。
 更新 `.imp/memory/session-state.md`。
 
 session-state 只写下次对话必须知道的最少信息，详略由 AI 自决：简单任务一行，复杂任务不超过5行。格式：任务 / 当前进展 / 下一步。
-

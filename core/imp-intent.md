@@ -1,10 +1,3 @@
----
-name: imp-intent
-description: IMP 意图三循环 — 功能级或骨架级工作开始前，通过描述→细化→可行性三阶段（三维度：横向冲突、纵向兼容、意图完备度）确保意图从模糊到清晰，防止方向偏差。
----
-
-# IMP imp-intent - Windsurf
-
 # IMP Intent — 意图三循环（描述 → 细化 → 可行性）
 
 ## 触发条件
@@ -89,4 +82,3 @@ AI 先 Reasoning（不读文件）：
 ### Phase 4: 写入 trace 事件
 
 向 `<项目根>/.imp/trace/events.ndjson` 追加一条 `intent_locked` 事件（trace schema 见 imp-trace-spec）。
-

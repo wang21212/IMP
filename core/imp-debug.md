@@ -1,10 +1,3 @@
----
-name: imp-debug
-description: IMP 任务级执行流程 — 明确指令的直接执行（修 bug、跑验收、小调整等）。皮骨检查若需改数据模型或接口，自动升级为功能级或骨架级重新路由。
----
-
-# IMP imp-debug - Windsurf
-
 # IMP Debug — 任务级执行流程
 
 ## 适用范围
@@ -49,4 +42,3 @@ description: IMP 任务级执行流程 — 明确指令的直接执行（修 bug
 更新 `.imp/memory/session-state.md`。
 
 session-state 只写下次对话必须知道的最少信息，详略由 AI 自决：任务级通常一行即可，复杂排查不超过3行。格式：任务 / 执行结果 / 是否有遗留。
-

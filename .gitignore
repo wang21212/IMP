@@ -1,3 +1,8 @@
 .DS_Store
 Thumbs.db
 .windsurf/
+
+# IMP 自迭代产物：trace 和 evaluation 是本机运行时数据，不入库
+# 但 memory/ 入库（含 direction/intent-log/milestone/session，是 IMP 自身的项目状态）
+.imp/trace/
+.imp/evaluations/
